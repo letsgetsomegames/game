@@ -2,11 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>2D Platformer</title>
+  <title>2D Game Selector</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div style="text-align: center; margin-top: 10px;">
+    <label for="gameSelect">Choose a game:</label>
+    <select id="gameSelect">
+      <option value="game1">Platformer</option>
+      <option value="game2">Rocket</option>
+    </select>
+  </div>
+
   <canvas id="game" width="800" height="400"></canvas>
-  <script src="game.js"></script>
+
+  <script>
+    const select = document.getElementById("gameSelect");
+    let script = null;
+
+    function loadGame(name) {
+      if (script) {
+        document.body.removeChild(script);
+      }
+      script = document.createElement("script");
+      script.src = name === "game1" ? "game.js" : "game2.js";
+      document.body.appendChild(script);
+    }
+
+    select.addEventListener("change", () => {
+      loadGame(select.value);
+    });
+
+    loadGame("game1"); // default
+  </script>
 </body>
 </html>
