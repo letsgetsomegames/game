@@ -2,67 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>2D Game Launcher</title>
+  <title>Game Selector</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
+      background: #f0f0f0;
       font-family: Arial, sans-serif;
       text-align: center;
-      background: #f0f0f0;
+      padding-top: 50px;
     }
-    #menu {
-      margin-top: 50px;
+    h1 {
+      font-size: 32px;
     }
-    canvas {
-      display: none;
-      border: 1px solid #000;
-      background: #fff;
+    .game-option {
+      margin: 20px auto;
+      padding: 20px;
+      width: 300px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
     }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
+    .game-option:hover {
+      transform: scale(1.05);
+    }
+    .game-option a {
+      display: block;
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div id="menu">
-    <h1>Select a Game</h1>
-    <select id="gameSelect">
-      <option value="">-- Choose a game --</option>
-      <option value="game1">Platformer (Key & Door)</option>
-      <option value="game2">Rocket Controls</option>
-    </select>
-    <br /><br />
-    <button id="startBtn" disabled>Start Game</button>
+  <h1>Select a Game</h1>
+
+  <div class="game-option">
+    <div>🧱 Platformer Game</div>
+    <a href="platformer.html">Play Platformer</a>
   </div>
 
-  <canvas id="game" width="800" height="400"></canvas>
-
-  <script>
-    const select = document.getElementById("gameSelect");
-    const startBtn = document.getElementById("startBtn");
-    const canvas = document.getElementById("game");
-    const menu = document.getElementById("menu");
-
-    let selectedGame = "";
-
-    select.addEventListener("change", () => {
-      selectedGame = select.value;
-      startBtn.disabled = !selectedGame;
-    });
-
-    startBtn.addEventListener("click", () => {
-      if (!selectedGame) return;
-
-      // Hide menu, show canvas
-      menu.style.display = "none";
-      canvas.style.display = "block";
-
-      // Dynamically load selected game
-      const script = document.createElement("script");
-      script.src = selectedGame === "game1" ? "game.js" : "game2.js";
-      document.body.appendChild(script);
-    });
-  </script>
+  <div class="game-option">
+    <div>🚀 Rocket Game</div>
+    <a href="rocket.html">Play Rocket</a>
+  </div>
 </body>
 </html>
