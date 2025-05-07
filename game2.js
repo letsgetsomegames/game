@@ -1,57 +1,69 @@
 window.onload = function () {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
 
   const keys = {};
-  document.addEventListener('keydown', e => keys[e.code] = true);
-  document.addEventListener('keyup', e => keys[e.code] = false);
+  document.addEventListener("keydown", (e) => keys[e.code] = true);
+  document.addEventListener("keyup", (e) => keys[e.code] = false);
+
+  const waterHeight = 60;
+  const platformY = canvas.height - waterHeight - 20;
 
   const rocket = {
-    x: 100,  // Starts at bottom-left platform
-    y: 380,  // Position above the water
+    x: 100, // start on first platform
+    y: platformY - 20,
     xVel: 0,
     yVel: 0,
     angle: 0,
-    thrust: 0.3,  // Increased thrust
-    gravity: 0.1,
+    thrust: 0.4, // increased
+    gravity: 0.15,
     width: 20,
     height: 40,
-    gearDeployed: false,
+    gearDeployed: false
   };
 
-  const waterHeight = 40;  // Height of the water
-  let camera = { x: 0, y: 0 };
-  const platforms = [];
-  const groundY = canvas.height - waterHeight;
+  const camera = { x: 0, y: 0 };
 
-  // Generate platforms
-  function generatePlatforms(range = 2000) {
-    for (let i = 200; i <= range; i += 400) {
-      // Platforms are floating above the water
-      platforms.push({ x: i, y: groundY - Math.random() * 30 - 10, width: 100, height: 10 });
+  const platforms = [];
+  function generatePlatforms() {
+    // Start platform at x = 100
+    platforms.push({ x: 100, y: platformY, width: 100, height: 10 });
+
+    for (let i = 300; i <= 2000; i += 400) {
+      platforms.push({
+        x: i,
+        y: platformY + Math.random() * 30 - 15,
+        width: 100,
+        height: 10,
+      });
+    }
+  }
+
+  function toggleGear() {
+    if (keys["Space"]) {
+      rocket.gearDeployed = !rocket.gearDeployed;
+      keys["Space"] = false; // prevent repeating toggle
     }
   }
 
   function updateRocket() {
-    if (keys['ArrowLeft']) rocket.angle -= 0.05;
-    if (keys['ArrowRight']) rocket.angle += 0.05;
+    toggleGear();
 
-    // Thrust effect, reduced by 50% when landing gear is deployed
+    if (keys["ArrowLeft"]) rocket.angle -= 0.05;
+    if (keys["ArrowRight"]) rocket.angle += 0.05;
+
     const effectiveThrust = rocket.gearDeployed ? rocket.thrust / 2 : rocket.thrust;
 
-    if (keys['ArrowUp']) {
+    if (keys["ArrowUp"]) {
       rocket.xVel += Math.cos(rocket.angle - Math.PI / 2) * effectiveThrust;
       rocket.yVel += Math.sin(rocket.angle - Math.PI / 2) * effectiveThrust;
     }
 
-    // Gravity
     rocket.yVel += rocket.gravity;
 
-    // Update position
     rocket.x += rocket.xVel;
     rocket.y += rocket.yVel;
 
-    // Camera follows the rocket
     camera.x = rocket.x - canvas.width / 2;
     camera.y = rocket.y - canvas.height / 2;
   }
@@ -62,7 +74,7 @@ window.onload = function () {
     ctx.rotate(rocket.angle);
 
     // Rocket body
-    ctx.fillStyle = '#ccc';
+    ctx.fillStyle = "#ccc";
     ctx.beginPath();
     ctx.moveTo(0, -rocket.height / 2);
     ctx.lineTo(rocket.width / 2, rocket.height / 2);
@@ -71,8 +83,8 @@ window.onload = function () {
     ctx.fill();
 
     // Flame
-    if (keys['ArrowUp']) {
-      ctx.fillStyle = 'orange';
+    if (keys["ArrowUp"]) {
+      ctx.fillStyle = "orange";
       ctx.beginPath();
       ctx.moveTo(0, rocket.height / 2);
       ctx.lineTo(-5, rocket.height / 2 + 15);
@@ -81,9 +93,9 @@ window.onload = function () {
       ctx.fill();
     }
 
-    // Landing gear
+    // Landing Gear
     if (rocket.gearDeployed) {
-      ctx.strokeStyle = '#444';
+      ctx.strokeStyle = "#333";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(-10, rocket.height / 2);
@@ -97,53 +109,66 @@ window.onload = function () {
   }
 
   function drawPlatforms() {
-    ctx.fillStyle = '#444';
-    for (let platform of platforms) {
-      const screenX = platform.x - camera.x;
-      const screenY = platform.y - camera.y;
-      ctx.fillRect(screenX, screenY, platform.width, platform.height);
-    }
+    ctx.fillStyle = "#444";
+    platforms.forEach((p) => {
+      ctx.fillRect(p.x - camera.x, p.y - camera.y, p.width, p.height);
+    });
   }
 
   function drawWater() {
-    ctx.fillStyle = 'blue';
+    ctx.fillStyle = "#4dc0ff";
     ctx.fillRect(0, canvas.height - waterHeight, canvas.width, waterHeight);
   }
 
   function drawGUI() {
-    ctx.fillStyle = '#000';
-    ctx.font = '16px Arial';
-    ctx.fillText('← ↑ → to control | SPACE to deploy landing gear', 10, 20);
-    ctx.fillText(`X: ${Math.round(rocket.x)} Y: ${Math.round(rocket.y)}`, 10, 40);
+    ctx.fillStyle = "#000";
+    ctx.font = "16px Arial";
+    ctx.fillText("← ↑ → to fly | SPACE to toggle landing gear", 10, 20);
+    ctx.fillText(
+      `Thrust: ${rocket.gearDeployed ? "HALF" : "FULL"} | Gear: ${
+        rocket.gearDeployed ? "DOWN" : "UP"
+      }`,
+      10,
+      40
+    );
+    ctx.fillText(`X: ${rocket.x.toFixed(1)} Y: ${rocket.y.toFixed(1)}`, 10, 60);
   }
 
   function checkLanding() {
-    for (let platform of platforms) {
-      if (rocket.y + rocket.height / 2 >= platform.y &&
-        rocket.x > platform.x && rocket.x < platform.x + platform.width) {
-        // Land on platform
-        if (Math.abs(rocket.yVel) < 2 && rocket.y + rocket.height / 2 <= platform.y) {
-          rocket.yVel = 0;
-          rocket.y = platform.y - rocket.height / 2;
-          if (rocket.gearDeployed) {
-            rocket.gearDeployed = false;  // Retract gear on landing
-          }
-        }
+    for (const p of platforms) {
+      const withinX = rocket.x > p.x && rocket.x < p.x + p.width;
+      const hittingY =
+        rocket.y + rocket.height / 2 >= p.y &&
+        rocket.y + rocket.height / 2 <= p.y + 5;
+
+      if (withinX && hittingY && rocket.yVel >= 0) {
+        // "land" on the platform
+        rocket.yVel = 0;
+        rocket.y = p.y - rocket.height / 2;
+        rocket.xVel *= 0.9;
       }
+    }
+
+    // prevent falling below water
+    const waterY = canvas.height - waterHeight;
+    if (rocket.y > camera.y + waterY) {
+      rocket.y = camera.y + waterY;
+      rocket.yVel = 0;
+      rocket.xVel = 0;
     }
   }
 
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateRocket();
-    checkLanding();
     drawWater();
     drawPlatforms();
+    updateRocket();
+    checkLanding();
     drawRocket();
     drawGUI();
     requestAnimationFrame(gameLoop);
   }
 
-  generatePlatforms(2000); // Generate platforms across the map
+  generatePlatforms();
   gameLoop();
 };
