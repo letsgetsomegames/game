@@ -7,53 +7,59 @@ window.onload = function () {
   document.addEventListener('keyup', e => keys[e.code] = false);
 
   const rocket = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    width: 20,
-    height: 40,
+    x: 0,
+    y: 0,
     xVel: 0,
     yVel: 0,
     angle: 0,
-    thrust: 0.15
+    thrust: 0.15,
+    gravity: 0.1,
+    width: 20,
+    height: 40,
+    gearDeployed: false,
   };
 
-  function resetRocket() {
-    rocket.x = canvas.width / 2;
-    rocket.y = canvas.height / 2;
-    rocket.xVel = 0;
-    rocket.yVel = 0;
-    rocket.angle = 0;
+  let camera = { x: 0, y: 0 };
+
+  const platforms = [];
+
+  function generatePlatforms(range = 2000) {
+    for (let i = -range; i <= range; i += 400) {
+      for (let j = 200; j <= range; j += 500) {
+        platforms.push({ x: i, y: j + Math.random() * 100 - 50, width: 100, height: 10 });
+      }
+    }
   }
 
   function updateRocket() {
+    // Controls
     if (keys['ArrowLeft']) rocket.angle -= 0.05;
     if (keys['ArrowRight']) rocket.angle += 0.05;
-
     if (keys['ArrowUp']) {
       rocket.xVel += Math.cos(rocket.angle - Math.PI / 2) * rocket.thrust;
       rocket.yVel += Math.sin(rocket.angle - Math.PI / 2) * rocket.thrust;
     }
 
+    if (keys['Space']) rocket.gearDeployed = true;
+
+    // Gravity
+    rocket.yVel += rocket.gravity;
+
+    // Update position
     rocket.x += rocket.xVel;
     rocket.y += rocket.yVel;
 
-    // Screen wrap
-    if (rocket.x < 0) rocket.x = canvas.width;
-    if (rocket.x > canvas.width) rocket.x = 0;
-    if (rocket.y < 0) rocket.y = canvas.height;
-    if (rocket.y > canvas.height) rocket.y = 0;
-
-    // Slight drag
-    rocket.xVel *= 0.995;
-    rocket.yVel *= 0.995;
+    // Camera follows
+    camera.x = rocket.x - canvas.width / 2;
+    camera.y = rocket.y - canvas.height / 2;
   }
 
   function drawRocket() {
     ctx.save();
-    ctx.translate(rocket.x, rocket.y);
+    ctx.translate(rocket.x - camera.x, rocket.y - camera.y);
     ctx.rotate(rocket.angle);
 
-    // Rocket body
+    // Body
     ctx.fillStyle = '#ccc';
     ctx.beginPath();
     ctx.moveTo(0, -rocket.height / 2);
@@ -62,7 +68,7 @@ window.onload = function () {
     ctx.closePath();
     ctx.fill();
 
-    // Thrust flame
+    // Flame
     if (keys['ArrowUp']) {
       ctx.fillStyle = 'orange';
       ctx.beginPath();
@@ -73,23 +79,46 @@ window.onload = function () {
       ctx.fill();
     }
 
+    // Landing gear
+    if (rocket.gearDeployed) {
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-10, rocket.height / 2);
+      ctx.lineTo(-15, rocket.height / 2 + 10);
+      ctx.moveTo(10, rocket.height / 2);
+      ctx.lineTo(15, rocket.height / 2 + 10);
+      ctx.stroke();
+    }
+
     ctx.restore();
+  }
+
+  function drawPlatforms() {
+    ctx.fillStyle = '#444';
+    for (let platform of platforms) {
+      const screenX = platform.x - camera.x;
+      const screenY = platform.y - camera.y;
+      ctx.fillRect(screenX, screenY, platform.width, platform.height);
+    }
   }
 
   function drawGUI() {
     ctx.fillStyle = '#000';
     ctx.font = '16px Arial';
-    ctx.fillText('Use ← ↑ → to control the rocket', 10, 20);
+    ctx.fillText('← ↑ → to control | SPACE to deploy landing gear', 10, 20);
+    ctx.fillText(`X: ${Math.round(rocket.x)} Y: ${Math.round(rocket.y)}`, 10, 40);
   }
 
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateRocket();
+    drawPlatforms();
     drawRocket();
     drawGUI();
     requestAnimationFrame(gameLoop);
   }
 
-  resetRocket();
+  generatePlatforms();
   gameLoop();
 };
