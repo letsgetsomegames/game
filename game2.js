@@ -7,40 +7,42 @@ window.onload = function () {
   document.addEventListener('keyup', e => keys[e.code] = false);
 
   const rocket = {
-    x: 0,
-    y: 0,
+    x: 100,  // Starts at bottom-left platform
+    y: 380,  // Position above the water
     xVel: 0,
     yVel: 0,
     angle: 0,
-    thrust: 0.15,
+    thrust: 0.3,  // Increased thrust
     gravity: 0.1,
     width: 20,
     height: 40,
     gearDeployed: false,
   };
 
+  const waterHeight = 40;  // Height of the water
   let camera = { x: 0, y: 0 };
-
   const platforms = [];
+  const groundY = canvas.height - waterHeight;
 
+  // Generate platforms
   function generatePlatforms(range = 2000) {
-    for (let i = -range; i <= range; i += 400) {
-      for (let j = 200; j <= range; j += 500) {
-        platforms.push({ x: i, y: j + Math.random() * 100 - 50, width: 100, height: 10 });
-      }
+    for (let i = 200; i <= range; i += 400) {
+      // Platforms are floating above the water
+      platforms.push({ x: i, y: groundY - Math.random() * 30 - 10, width: 100, height: 10 });
     }
   }
 
   function updateRocket() {
-    // Controls
     if (keys['ArrowLeft']) rocket.angle -= 0.05;
     if (keys['ArrowRight']) rocket.angle += 0.05;
-    if (keys['ArrowUp']) {
-      rocket.xVel += Math.cos(rocket.angle - Math.PI / 2) * rocket.thrust;
-      rocket.yVel += Math.sin(rocket.angle - Math.PI / 2) * rocket.thrust;
-    }
 
-    if (keys['Space']) rocket.gearDeployed = true;
+    // Thrust effect, reduced by 50% when landing gear is deployed
+    const effectiveThrust = rocket.gearDeployed ? rocket.thrust / 2 : rocket.thrust;
+
+    if (keys['ArrowUp']) {
+      rocket.xVel += Math.cos(rocket.angle - Math.PI / 2) * effectiveThrust;
+      rocket.yVel += Math.sin(rocket.angle - Math.PI / 2) * effectiveThrust;
+    }
 
     // Gravity
     rocket.yVel += rocket.gravity;
@@ -49,7 +51,7 @@ window.onload = function () {
     rocket.x += rocket.xVel;
     rocket.y += rocket.yVel;
 
-    // Camera follows
+    // Camera follows the rocket
     camera.x = rocket.x - canvas.width / 2;
     camera.y = rocket.y - canvas.height / 2;
   }
@@ -59,7 +61,7 @@ window.onload = function () {
     ctx.translate(rocket.x - camera.x, rocket.y - camera.y);
     ctx.rotate(rocket.angle);
 
-    // Body
+    // Rocket body
     ctx.fillStyle = '#ccc';
     ctx.beginPath();
     ctx.moveTo(0, -rocket.height / 2);
@@ -103,6 +105,11 @@ window.onload = function () {
     }
   }
 
+  function drawWater() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(0, canvas.height - waterHeight, canvas.width, waterHeight);
+  }
+
   function drawGUI() {
     ctx.fillStyle = '#000';
     ctx.font = '16px Arial';
@@ -110,15 +117,33 @@ window.onload = function () {
     ctx.fillText(`X: ${Math.round(rocket.x)} Y: ${Math.round(rocket.y)}`, 10, 40);
   }
 
+  function checkLanding() {
+    for (let platform of platforms) {
+      if (rocket.y + rocket.height / 2 >= platform.y &&
+        rocket.x > platform.x && rocket.x < platform.x + platform.width) {
+        // Land on platform
+        if (Math.abs(rocket.yVel) < 2 && rocket.y + rocket.height / 2 <= platform.y) {
+          rocket.yVel = 0;
+          rocket.y = platform.y - rocket.height / 2;
+          if (rocket.gearDeployed) {
+            rocket.gearDeployed = false;  // Retract gear on landing
+          }
+        }
+      }
+    }
+  }
+
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateRocket();
+    checkLanding();
+    drawWater();
     drawPlatforms();
     drawRocket();
     drawGUI();
     requestAnimationFrame(gameLoop);
   }
 
-  generatePlatforms();
+  generatePlatforms(2000); // Generate platforms across the map
   gameLoop();
 };
